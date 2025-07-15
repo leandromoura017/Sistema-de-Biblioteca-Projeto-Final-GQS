@@ -37,34 +37,34 @@ Este projeto implementa um sistema de biblioteca com arquitetura MVC, desenvolvi
 ```
 projeto-final/
 ├── src/
-│   ├── controllers/          # Controladores (lógica de negócio)
+│   ├── controllers/          
 │   │   ├── autorController.js
 │   │   └── livroController.js
-│   ├── models/              # Modelos de dados
+│   ├── models/              
 │   │   ├── Autor.js
 │   │   ├── Livro.js
 │   │   └── index.js
-│   ├── routes/              # Rotas da API
+│   ├── routes/              
 │   │   ├── autorRoutes.js
 │   │   └── livroRoutes.js
-│   ├── views/               # Templates EJS
+│   ├── views/               
 │   │   ├── autores/
 │   │   ├── livros/
 │   │   ├── index.ejs
 │   │   └── layout.ejs
-│   ├── public/              # Arquivos estáticos
+│   ├── public/              
 │   │   └── js/
-│   └── database/            # Configuração do banco
+│   └── database/            
 │       └── database.js
-├── tests/                   # Testes automatizados
-│   ├── unit/               # Testes unitários
-│   ├── integration/        # Testes de integração
+├── tests/                   
+│   ├── unit/               
+│   ├── integration/        
 │   └── setup.js
-├── cypress/                 # Testes E2E
+├── cypress/                 
 │   ├── e2e/
 │   ├── support/
 │   └── fixtures/
-├── app.js                   # Arquivo principal
+├── app.js                   
 ├── package.json
 ├── cypress.config.js
 ├── jest.config.js
@@ -75,7 +75,7 @@ projeto-final/
 
 ### Pré-requisitos
 - Node.js (versão 14 ou superior)
-- npm (gerenciador de pacotes)
+- npm 
 
 ### Passos para instalação
 
@@ -126,10 +126,10 @@ npm run test:coverage
 
 2. **Execute os testes Cypress**:
    ```bash
-   # Modo interativo (abre interface do Cypress)
+   # Modo interativo 
    npm run cypress:open
 
-   # Modo headless (execução em linha de comando)
+   # Modo headless 
    npm run cypress:run
    ```
 
