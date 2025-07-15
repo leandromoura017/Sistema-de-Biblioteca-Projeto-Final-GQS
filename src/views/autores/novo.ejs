@@ -1,0 +1,194 @@
+<%- include('../layout', { title: title, body: `
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-edit"></i> Cadastrar Novo Autor
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Área para mensagens de feedback -->
+                <div id="alertContainer"></div>
+                
+                <form id="autorForm">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="nome" class="form-label">
+                                <i class="fas fa-user"></i> Nome Completo *
+                            </label>
+                            <input type="text" class="form-control" id="nome" name="nome" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="dataNascimento" class="form-label">
+                                <i class="fas fa-birthday-cake"></i> Data de Nascimento *
+                            </label>
+                            <input type="date" class="form-control" id="dataNascimento" name="dataNascimento" 
+                                   max="${new Date().toISOString().split('T')[0]}" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email *
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="autor@exemplo.com" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="nacionalidade" class="form-label">
+                                <i class="fas fa-flag"></i> Nacionalidade *
+                            </label>
+                            <select class="form-control" id="nacionalidade" name="nacionalidade" required>
+                                <option value="">Selecione a nacionalidade</option>
+                                <option value="Brasileira">Brasileira</option>
+                                <option value="Americana">Americana</option>
+                                <option value="Inglesa">Inglesa</option>
+                                <option value="Francesa">Francesa</option>
+                                <option value="Alemã">Alemã</option>
+                                <option value="Italiana">Italiana</option>
+                                <option value="Espanhola">Espanhola</option>
+                                <option value="Portuguesa">Portuguesa</option>
+                                <option value="Argentina">Argentina</option>
+                                <option value="Chilena">Chilena</option>
+                                <option value="Japonesa">Japonesa</option>
+                                <option value="Chinesa">Chinesa</option>
+                                <option value="Russa">Russa</option>
+                                <option value="Outra">Outra</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="biografia" class="form-label">
+                            <i class="fas fa-file-text"></i> Biografia
+                        </label>
+                        <textarea class="form-control" id="biografia" name="biografia" rows="4" 
+                                  placeholder="Breve biografia do autor (opcional)"></textarea>
+                        <div class="form-text">Campo opcional - máximo 1000 caracteres</div>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                        <button type="submit" class="btn btn-success" id="submitBtn">
+                            <i class="fas fa-save"></i> Cadastrar Autor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('autorForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const alertContainer = document.getElementById('alertContainer');
+    const biografiaTextarea = document.getElementById('biografia');
+    
+    // Contador de caracteres para biografia
+    biografiaTextarea.addEventListener('input', function() {
+        const maxLength = 1000;
+        const currentLength = this.value.length;
+        const formText = this.nextElementSibling;
+        
+        if (currentLength > maxLength) {
+            this.value = this.value.substring(0, maxLength);
+            formText.textContent = \`Máximo de \${maxLength} caracteres atingido\`;
+            formText.classList.add('text-danger');
+        } else {
+            formText.textContent = \`Campo opcional - \${currentLength}/\${maxLength} caracteres\`;
+            formText.classList.remove('text-danger');
+        }
+    });
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Desabilitar botão durante o envio
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+        
+        try {
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Remover biografia se estiver vazia
+            if (!data.biografia.trim()) {
+                delete data.biografia;
+            }
+            
+            const response = await fetch('/api/autores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                mostrarAlerta('success', 'Autor cadastrado com sucesso!');
+                form.reset();
+                setTimeout(() => {
+                    window.location.href = '/autores';
+                }, 2000);
+            } else {
+                mostrarAlerta('danger', result.error || 'Erro ao cadastrar autor');
+                if (result.detalhes) {
+                    result.detalhes.forEach(erro => {
+                        marcarCampoInvalido(erro.campo, erro.mensagem);
+                    });
+                }
+            }
+        } catch (error) {
+            mostrarAlerta('danger', 'Erro de conexão. Tente novamente.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Cadastrar Autor';
+        }
+    });
+    
+    function mostrarAlerta(tipo, mensagem) {
+        alertContainer.innerHTML = \`
+            <div class="alert alert-\${tipo} alert-dismissible fade show" role="alert">
+                <i class="fas fa-\${tipo === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                \${mensagem}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        \`;
+    }
+    
+    function marcarCampoInvalido(campo, mensagem) {
+        const input = document.getElementById(campo);
+        if (input) {
+            input.classList.add('is-invalid');
+            const feedback = input.nextElementSibling;
+            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                feedback.textContent = mensagem;
+            }
+        }
+    }
+    
+    // Remover marcação de erro quando o usuário começar a digitar
+    form.addEventListener('input', function(e) {
+        if (e.target.classList.contains('is-invalid')) {
+            e.target.classList.remove('is-invalid');
+        }
+    });
+});
+</script>
+` }) %>
+

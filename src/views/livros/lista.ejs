@@ -1,0 +1,178 @@
+<%- include('../layout', { title: title, body: `
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-book"></i> Lista de Livros
+                </h4>
+                <a href="/livros/novo" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Novo Livro
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- Área para mensagens de feedback -->
+                <div id="alertContainer"></div>
+                
+                <!-- Loading spinner -->
+                <div id="loadingSpinner" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mt-2">Carregando livros...</p>
+                </div>
+                
+                <!-- Container para a lista de livros -->
+                <div id="livrosContainer" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Autor</th>
+                                    <th>ISBN</th>
+                                    <th>Ano</th>
+                                    <th>Gênero</th>
+                                    <th>Páginas</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="livrosTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Mensagem quando não há livros -->
+                <div id="emptyState" style="display: none;" class="text-center py-5">
+                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum livro cadastrado</h5>
+                    <p class="text-muted">Comece cadastrando seu primeiro livro!</p>
+                    <a href="/livros/novo" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Cadastrar Primeiro Livro
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const alertContainer = document.getElementById('alertContainer');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const livrosContainer = document.getElementById('livrosContainer');
+    const emptyState = document.getElementById('emptyState');
+    const tableBody = document.getElementById('livrosTableBody');
+    
+    // Carregar livros ao inicializar a página
+    carregarLivros();
+    
+    async function carregarLivros() {
+        try {
+            const response = await fetch('/api/livros');
+            const livros = await response.json();
+            
+            loadingSpinner.style.display = 'none';
+            
+            if (livros.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                livrosContainer.style.display = 'block';
+                renderizarLivros(livros);
+            }
+        } catch (error) {
+            loadingSpinner.style.display = 'none';
+            mostrarAlerta('danger', 'Erro ao carregar livros. Tente recarregar a página.');
+        }
+    }
+    
+    function renderizarLivros(livros) {
+        tableBody.innerHTML = '';
+        
+        livros.forEach(livro => {
+            const row = document.createElement('tr');
+            row.innerHTML = \`
+                <td>
+                    <strong>\${livro.titulo}</strong>
+                </td>
+                <td>
+                    \${livro.autor ? livro.autor.nome : '<span class="text-muted">Não informado</span>'}
+                </td>
+                <td>
+                    <code>\${livro.isbn}</code>
+                </td>
+                <td>\${livro.anoPublicacao}</td>
+                <td>
+                    <span class="badge bg-secondary">\${livro.genero}</span>
+                </td>
+                <td>\${livro.numeroPaginas}</td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-info" onclick="verDetalhes(\${livro.id})" title="Ver detalhes">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="editarLivro(\${livro.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="confirmarExclusao(\${livro.id}, '\${livro.titulo}')" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            \`;
+            tableBody.appendChild(row);
+        });
+    }
+    
+    window.verDetalhes = function(id) {
+        // Implementar modal ou página de detalhes
+        alert('Funcionalidade de detalhes será implementada em breve!');
+    };
+    
+    window.editarLivro = function(id) {
+        // Implementar edição
+        alert('Funcionalidade de edição será implementada em breve!');
+    };
+    
+    window.confirmarExclusao = function(id, titulo) {
+        if (confirm(\`Tem certeza que deseja excluir o livro "\${titulo}"?\\n\\nEsta ação não pode ser desfeita.\`)) {
+            excluirLivro(id);
+        }
+    };
+    
+    async function excluirLivro(id) {
+        try {
+            const response = await fetch(\`/api/livros/\${id}\`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                mostrarAlerta('success', 'Livro excluído com sucesso!');
+                // Recarregar a lista
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                mostrarAlerta('danger', result.error || 'Erro ao excluir livro');
+            }
+        } catch (error) {
+            mostrarAlerta('danger', 'Erro de conexão. Tente novamente.');
+        }
+    }
+    
+    function mostrarAlerta(tipo, mensagem) {
+        alertContainer.innerHTML = \`
+            <div class="alert alert-\${tipo} alert-dismissible fade show" role="alert">
+                <i class="fas fa-\${tipo === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                \${mensagem}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        \`;
+    }
+});
+</script>
+` }) %>
+

@@ -1,0 +1,213 @@
+<%- include('../layout', { title: title, body: `
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-book"></i> Cadastrar Novo Livro
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Área para mensagens de feedback -->
+                <div id="alertContainer"></div>
+                
+                <form id="livroForm">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="titulo" class="form-label">
+                                <i class="fas fa-heading"></i> Título *
+                            </label>
+                            <input type="text" class="form-control" id="titulo" name="titulo" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="anoPublicacao" class="form-label">
+                                <i class="fas fa-calendar"></i> Ano de Publicação *
+                            </label>
+                            <input type="number" class="form-control" id="anoPublicacao" name="anoPublicacao" 
+                                   min="1000" max="${new Date().getFullYear()}" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="isbn" class="form-label">
+                                <i class="fas fa-barcode"></i> ISBN *
+                            </label>
+                            <input type="text" class="form-control" id="isbn" name="isbn" 
+                                   placeholder="Ex: 978-3-16-148410-0" required>
+                            <div class="form-text">ISBN-10 ou ISBN-13</div>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="genero" class="form-label">
+                                <i class="fas fa-tags"></i> Gênero *
+                            </label>
+                            <select class="form-control" id="genero" name="genero" required>
+                                <option value="">Selecione um gênero</option>
+                                <option value="Ficção">Ficção</option>
+                                <option value="Não-ficção">Não-ficção</option>
+                                <option value="Romance">Romance</option>
+                                <option value="Mistério">Mistério</option>
+                                <option value="Fantasia">Fantasia</option>
+                                <option value="Ficção Científica">Ficção Científica</option>
+                                <option value="Biografia">Biografia</option>
+                                <option value="História">História</option>
+                                <option value="Autoajuda">Autoajuda</option>
+                                <option value="Técnico">Técnico</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="numeroPaginas" class="form-label">
+                                <i class="fas fa-file-alt"></i> Número de Páginas *
+                            </label>
+                            <input type="number" class="form-control" id="numeroPaginas" name="numeroPaginas" 
+                                   min="1" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="autorId" class="form-label">
+                                <i class="fas fa-user"></i> Autor
+                            </label>
+                            <select class="form-control" id="autorId" name="autorId">
+                                <option value="">Selecione um autor (opcional)</option>
+                            </select>
+                            <div class="form-text">Deixe em branco se o autor não estiver cadastrado</div>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i> Cadastrar Livro
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('livroForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const alertContainer = document.getElementById('alertContainer');
+    
+    // Carregar autores para o select
+    carregarAutores();
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Desabilitar botão durante o envio
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+        
+        try {
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Converter campos numéricos
+            data.anoPublicacao = parseInt(data.anoPublicacao);
+            data.numeroPaginas = parseInt(data.numeroPaginas);
+            
+            // Remover autorId se estiver vazio
+            if (!data.autorId) {
+                delete data.autorId;
+            } else {
+                data.autorId = parseInt(data.autorId);
+            }
+            
+            const response = await fetch('/api/livros', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                mostrarAlerta('success', 'Livro cadastrado com sucesso!');
+                form.reset();
+                setTimeout(() => {
+                    window.location.href = '/livros';
+                }, 2000);
+            } else {
+                mostrarAlerta('danger', result.error || 'Erro ao cadastrar livro');
+                if (result.detalhes) {
+                    result.detalhes.forEach(erro => {
+                        marcarCampoInvalido(erro.campo, erro.mensagem);
+                    });
+                }
+            }
+        } catch (error) {
+            mostrarAlerta('danger', 'Erro de conexão. Tente novamente.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Cadastrar Livro';
+        }
+    });
+    
+    async function carregarAutores() {
+        try {
+            const response = await fetch('/api/autores');
+            const autores = await response.json();
+            
+            const select = document.getElementById('autorId');
+            autores.forEach(autor => {
+                const option = document.createElement('option');
+                option.value = autor.id;
+                option.textContent = autor.nome;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Erro ao carregar autores:', error);
+        }
+    }
+    
+    function mostrarAlerta(tipo, mensagem) {
+        alertContainer.innerHTML = \`
+            <div class="alert alert-\${tipo} alert-dismissible fade show" role="alert">
+                <i class="fas fa-\${tipo === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                \${mensagem}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        \`;
+    }
+    
+    function marcarCampoInvalido(campo, mensagem) {
+        const input = document.getElementById(campo);
+        if (input) {
+            input.classList.add('is-invalid');
+            const feedback = input.nextElementSibling;
+            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                feedback.textContent = mensagem;
+            }
+        }
+    }
+    
+    // Remover marcação de erro quando o usuário começar a digitar
+    form.addEventListener('input', function(e) {
+        if (e.target.classList.contains('is-invalid')) {
+            e.target.classList.remove('is-invalid');
+        }
+    });
+});
+</script>
+` }) %>
+
